@@ -38,7 +38,7 @@ Every member delivers the same set of items, so each person owns one file in eac
 ## Repository structure
 
 ```
-GSHG-ADVBS/
+GSHG/
 ├── README.md
 ├── schema/
 │   ├── create_database.sql
