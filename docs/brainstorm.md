@@ -4,7 +4,7 @@
 
 > **Out of scope here:** constraints, stored procedures, triggers and optimisation. Do not design them in this file. If an idea occurs to you, drop it in the _Ideas parking lot_ of your section so it is not lost.
 
----
+***
 
 ## 0. How to use this file
 
@@ -82,17 +82,17 @@ _A person who makes or stays in a reservation._
 
 **Recommended Entities from Case Study:**
 
-- Hotel
-- RoomCategory
-- Room
-- RoomRate
-- Guest
-- Reservation
-- RoomAssignment
-- OptionalService
-- ReservationService
-- Payment
-- Maintenance
+* Hotel
+* RoomCategory
+* Room
+* RoomRate
+* Guest
+* Reservation
+* RoomAssignment
+* OptionalService
+* ReservationService
+* Payment
+* Maintenance
 
 <!-- SECTION 1 START: MEMBER 1 -->
 
@@ -142,15 +142,15 @@ _<what a row represents>_
 
 Free-form. Anything that is not an entity or attribute: potential constraints, procedures, triggers, optimisation ideas, query tricks, denormalisation thoughts. Tag each so it can be picked up later.
 
-- `[constraint]`
-- `[procedure]`
-- `[trigger]`
-- `[optimisation]`
-- `[other]`
+* `[constraint]`
+* `[procedure]`
+* `[trigger]`
+* `[optimisation]`
+* `[other]`
 
 <!-- SECTION 1 END -->
 
----
+***
 
 <!-- SECTION 2 START: MEMBER 2 -->
 
@@ -287,27 +287,27 @@ _A hotel property within the GSHG group._
 
 Free-form. Anything that is not an entity or attribute: potential constraints, procedures, triggers, optimisation ideas, query tricks, denormalisation thoughts. Tag each so it can be picked up later.
 
-- `[constraint]` `CHECK (DateOfBirth <= GETDATE())` on `Guest` to prevent invalid future birthdates.
-- `[constraint]` `CHECK (MaxOccupancy > 0)` on `RoomCategory`.
-- `[constraint]` `CHECK (IsAccessible IN (0, 1))` on `Room`.
-- `[procedure]` `sp_AssignGuestToRoom(@RoomAssignmentID, @GuestID, @IsPrimaryOccupant)`: assigns a guest to an allocated room while validating against room maximum occupancy and checking age rules.
-- `[procedure]` `sp_GetHotelOccupancySummary(@HotelID, @Month, @Year)`: outputs room nights occupied, total available room nights, guest counts, and occupancy percentage.
-- `[trigger]` Enforce Maximum Occupancy: trigger on `RoomOccupant` that aborts insertion if `COUNT(RoomOccupant)` exceeds `RoomCategory.MaxOccupancy` for that room assignment.
-- `[trigger]` Enforce Adult Stay Rule (Case Study R9): trigger validating that each room assignment has at least one adult (derived `Age >= 18`) before check-in.
-- `[optimisation]` Filtered/Nonclustered index on `Room(HotelID, IsAccessible) INCLUDE (RoomNumber)` to accelerate accessible room queries (M2-Q6).
-- `[optimisation]` Composite index on `Reservation(HotelID, CheckInDate, CheckOutDate, Status)` to optimize date range occupancy lookups (M2-Q5, M2-Q7).
-- `[optimisation]` Nonclustered index on `Guest(DateOfBirth)` to accelerate age-band derivations and aggregations.
-- `[other]` Consider a database view `vw_CurrentRoomOccupancy` combining RoomAssignment, Room, and RoomOccupant with derived age categories for simplified reporting.
+* `[constraint]` `CHECK (DateOfBirth <= GETDATE())` on `Guest` to prevent invalid future birthdates.
+* `[constraint]` `CHECK (MaxOccupancy > 0)` on `RoomCategory`.
+* `[constraint]` `CHECK (IsAccessible IN (0, 1))` on `Room`.
+* `[procedure]` `sp_AssignGuestToRoom(@RoomAssignmentID, @GuestID, @IsPrimaryOccupant)`: assigns a guest to an allocated room while validating against room maximum occupancy and checking age rules.
+* `[procedure]` `sp_GetHotelOccupancySummary(@HotelID, @Month, @Year)`: outputs room nights occupied, total available room nights, guest counts, and occupancy percentage.
+* `[trigger]` Enforce Maximum Occupancy: trigger on `RoomOccupant` that aborts insertion if `COUNT(RoomOccupant)` exceeds `RoomCategory.MaxOccupancy` for that room assignment.
+* `[trigger]` Enforce Adult Stay Rule (Case Study R9): trigger validating that each room assignment has at least one adult (derived `Age >= 18`) before check-in.
+* `[optimisation]` Filtered/Nonclustered index on `Room(HotelID, IsAccessible) INCLUDE (RoomNumber)` to accelerate accessible room queries (M2-Q6).
+* `[optimisation]` Composite index on `Reservation(HotelID, CheckInDate, CheckOutDate, Status)` to optimize date range occupancy lookups (M2-Q5, M2-Q7).
+* `[optimisation]` Nonclustered index on `Guest(DateOfBirth)` to accelerate age-band derivations and aggregations.
+* `[other]` Consider a database view `vw_CurrentRoomOccupancy` combining RoomAssignment, Room, and RoomOccupant with derived age categories for simplified reporting.
 
 <!-- SECTION 2 END -->
 
----
+***
 
 <!-- SECTION 3 START: MEMBER 3 -->
 
 ## Section 3: Member 3 - Room rates and optional services
 
-**Status:** `Not started`
+**Status:** In Progress
 
 ### 3.1 Question trace
 
@@ -327,12 +327,19 @@ Fill the last two columns for every query before drawing entities.
 
 <!-- Copy the entity card format from Section 0 for each entity. One card per entity. -->
 
-#### Entity: <Name>
+#### Entity: Hotel
 
-_<what a row represents>_
+A hotel in the group. Only attributes needed by Member 3 are listed
+
+| Attribute | Suggested type | Key | Needed by         | Notes                                                       |
+| --------- | -------------- | --- | ----------------- | ----------------------------------------------------------- |
+| HotelID   | INT            | PK  | M3-Q1, Q4, Q5, Q7 | Identifies the specified hotel and groups results by hotel. |
+| HotelName | VARCHAR(100)   | -   | M3-Q4, Q5, Q7     | Display name in reports.                                    |
+
+#### Entity：RoomCategory
 
 | Attribute | Suggested type | Key | Needed by | Notes |
-| --------- | -------------- | --- | --------- | ----- |
+| :-------- | :------------- | :-- | :-------- | :---- |
 |           |                |     |           |       |
 
 ### 3.3 Relationships
@@ -351,15 +358,15 @@ _<what a row represents>_
 
 Free-form. Anything that is not an entity or attribute: potential constraints, procedures, triggers, optimisation ideas, query tricks, denormalisation thoughts. Tag each so it can be picked up later.
 
-- `[constraint]`
-- `[procedure]`
-- `[trigger]`
-- `[optimisation]`
-- `[other]`
+* `[constraint]`
+* `[procedure]`
+* `[trigger]`
+* `[optimisation]`
+* `[other]`
 
 <!-- SECTION 3 END -->
 
----
+***
 
 <!-- SECTION 4 START: MEMBER 4 -->
 
@@ -598,8 +605,6 @@ Fill the last two columns for every query before drawing entities.
 | Reservation     | has                         | Payment            | 1:M         | A Reservation may have zero or many Payment records; each Payment record belongs to exactly one Reservation                         | Payment               |
 | Room            | undergoes                   | RoomMaintenance    | 1:M         | A Room may have zero or many RoomMaintenance records; each RoomMaintenance record refers to exactly one Room                        | RoomMaintenance       |
 
-
-
 ## 4.4 Assumptions and Open Questions
 
 | #    | Type       | Item                                                                                                                  | Raised for (Q or entity)                     | Resolution                                                                                                                                              |
@@ -627,8 +632,6 @@ Fill the last two columns for every query before drawing entities.
 | 4.21 | Assumption | Each room number must be unique within its hotel, but different hotels may reuse the same room number.                | Room                                         | Consider a unique constraint on (HotelID, RoomNumber).                                                                                                  |
 | 4.22 | Question   | Should cancellation counts include only confirmed reservations, or all reservations that were cancelled?              | Hotel, Reservation, Cancellation; M4-Q5, Q6  | Define the eligible reservation statuses consistently before calculating cancellation counts and rates.                                                 |
 | 4.23 | Assumption | Date-range reports use clearly defined inclusive start and end dates.                                                 | M4-Q1, Q2, Q4, Q5, Q6                        | Use consistent date filtering and clarify whether date ranges refer to booking dates, check-in dates, change dates, or cancellation dates.              |
-
-
 
 ## 4.5 Ideas Parking Lot (Optional)
 
@@ -658,7 +661,7 @@ Fill the last two columns for every query before drawing entities.
 
 <!-- SECTION 4 END -->
 
----
+***
 
 <!-- SECTION 5 START: MEMBER 5 -->
 
@@ -789,8 +792,9 @@ _<what a row represents>_
 
 Free-form. Anything that is not an entity or attribute: potential constraints, procedures, triggers, optimisation ideas, query tricks, denormalisation thoughts. Tag each so it can be picked up later.
 
-- \[constraint]: `CHECK (PaymentAmount > 0)`, `CHECK (PaymentType IN ('Payment','Refund'))`, and `CHECK (ExpectedCompletionDate >= StartDate)`.
-- \[procedure]: `sp_GetReservationBill(@ReservationID)`, returning the itemised bill and balance.
-- \[trigger]: Block a Payment that would overpay the balance, or a refund larger than the payments received.
-- \[optimisation]:
-- \[other]:
+* \[constraint]: `CHECK (PaymentAmount > 0)`, `CHECK (PaymentType IN ('Payment','Refund'))`, and `CHECK (ExpectedCompletionDate >= StartDate)`.
+* \[procedure]: `sp_GetReservationBill(@ReservationID)`, returning the itemised bill and balance.
+* \[trigger]: Block a Payment that would overpay the balance, or a refund larger than the payments received.
+* \[optimisation]:
+* \[other]:
+
