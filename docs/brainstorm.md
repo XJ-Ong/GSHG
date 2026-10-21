@@ -307,21 +307,21 @@ Free-form. Anything that is not an entity or attribute: potential constraints, p
 
 ## Section 3: Member 3 - Room rates and optional services
 
-**Status:** In Progress
+**Status:** Done
 
 ### 3.1 Question trace
 
 Fill the last two columns for every query before drawing entities.
 
-| Q           | Query (short)                                                                                           | Entities touched | Attributes needed |
-| ----------- | ------------------------------------------------------------------------------------------------------- | ---------------- | ----------------- |
-| M3-Q1 (i)   | Regular nightly rate and rate after 10% promo for Deluxe rooms at a hotel (labelled calculated columns) |                  |                   |
-| M3-Q2 (ii)  | Optional services on a reservation: quantity, charging basis, calculated charge                         |                  |                   |
-| M3-Q3 (iii) | Optional services that have never been purchased                                                        |                  |                   |
-| M3-Q4 (iv)  | Total value of breakfast packages sold per hotel in a month                                             |                  |                   |
-| M3-Q5 (v)   | Optional-service revenue by hotel and service type, with subtotals and grand total (ROLLUP/CUBE)        |                  |                   |
-| M3-Q6 (vi)  | Top five reservations by optional-service charges in a date range                                       |                  |                   |
-| M3-Q7 (vii) | Extra query: rates or services                                                                          |                  |                   |
+| Q           | Query (short)                                                                | Entities touched                                 | Attributes needed                                                                                                                                                                                                                   |
+| ----------- | ---------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M3-Q1 (i)   | Regular and 10%-discounted Deluxe nightly rate at a hotel                    | Hotel, RoomCategory, RoomRate                    | Hotel.HotelID; RoomCategory.RoomCategoryID, CategoryName; RoomRate.HotelID, RoomCategoryID, RateDate, NightlyRate. DiscountedRate is calculated as NightlyRate × 0.90.                                                              |
+| M3-Q2 (ii)  | Services selected for a reservation, quantity, basis and charge              | Reservation, OptionalService, ReservationService | Reservation.ReservationID; OptionalService.OptionalServiceID, ServiceName, ChargingBasis; ReservationService.ReservationID, OptionalServiceID, Quantity, UnitPriceAtPurchase. ServiceChargeAmount = Quantity × UnitPriceAtPurchase. |
+| M3-Q3 (iii) | Services never purchased                                                     | OptionalService, ReservationService              | OptionalService.OptionalServiceID, ServiceName; ReservationService.OptionalServiceID. Find services with no matching purchase.                                                                                                      |
+| M3-Q4 (iv)  | Breakfast package sales by hotel in a month                                  | Hotel, OptionalService, ReservationService       | Hotel.HotelID, HotelName; OptionalService.OptionalServiceID, HotelID, ServiceName, ServiceType; ReservationService.OptionalServiceID, PurchasedDateTime, Quantity, UnitPriceAtPurchase. Sum calculated service charges.             |
+| M3-Q5 (v)   | Service revenue by hotel and service type, with subtotals                    | Hotel, OptionalService, ReservationService       | Hotel.HotelID, HotelName; OptionalService.OptionalServiceID, HotelID, ServiceType; ReservationService.OptionalServiceID, Quantity, UnitPriceAtPurchase. Sum calculated charges using ROLLUP or CUBE.                                |
+| M3-Q6 (vi)  | Five reservations with highest service charges in a date range               | Reservation, ReservationService                  | Reservation.ReservationID; ReservationService.ReservationID, PurchasedDateTime, Quantity, UnitPriceAtPurchase. Sum charges per reservation and show the top five.                                                                   |
+| M3-Q7 (vii) | Extra query: average nightly rate by hotel and room category in a date range | Hotel, RoomCategory, RoomRate                    | Hotel.HotelID, HotelName; RoomCategory.RoomCategoryID, CategoryName; RoomRate.HotelID, RoomCategoryID, RateDate, NightlyRate. Calculate the average NightlyRate.                                                                    |
 
 ### 3.2 Entities and attributes
 
@@ -336,33 +336,90 @@ A hotel in the group. Only attributes needed by Member 3 are listed
 | HotelID   | INT            | PK  | M3-Q1, Q4, Q5, Q7 | Identifies the specified hotel and groups results by hotel. |
 | HotelName | VARCHAR(100)   | -   | M3-Q4, Q5, Q7     | Display name in reports.                                    |
 
-#### Entity：RoomCategory
+#### Entity: RoomCategory
 
-| Attribute | Suggested type | Key | Needed by | Notes |
-| :-------- | :------------- | :-- | :-------- | :---- |
-|           |                |     |           |       |
+A category of room, such as Standard, Deluxe, Family, and Suite.
+
+| Attribute      | Suggested type | Key | Needed by | Notes                                    |
+| -------------- | -------------- | --- | --------- | ---------------------------------------- |
+| RoomCategoryID | INT            | PK  | M3-Q1, Q7 | Links a category to its rates.           |
+| CategoryName   | VARCHAR(50)    | -   | M3-Q1, Q7 | Used to select Deluxe and label results. |
+
+#### Entity: RoomRate
+
+_The nightly rate for one hotel, room category and stay date._
+
+| Attribute      | Suggested type | Key                               | Needed by | Notes                                                             |
+| -------------- | -------------- | --------------------------------- | --------- | ----------------------------------------------------------------- |
+| RoomRateID     | INT            | PK                                | M3-Q1, Q7 | Identifies a rate record.                                         |
+| HotelID        | INT            | FK -> Hotel.HotelID               | M3-Q1, Q7 | Rates vary by hotel.                                              |
+| RoomCategoryID | INT            | FK -> RoomCategory.RoomCategoryID | M3-Q1, Q7 | Rates vary by category.                                           |
+| RateDate       | DATE           | -                                 | M3-Q1, Q7 | Date the nightly rate applies to.                                 |
+| NightlyRate    | DECIMAL(10,2)  | -                                 | M3-Q1, Q7 | Regular rate. The 10% promotional rate is calculated, not stored. |
+
+#### Entity: Reservation
+
+_A booking at a hotel. Only the attribute needed directly by Member 3 is listed._
+
+| Attribute     | Suggested type | Key | Needed by | Notes                                                             |
+| ------------- | -------------- | --- | --------- | ----------------------------------------------------------------- |
+| ReservationID | INT            | PK  | M3-Q2, Q6 | Identifies the reservation whose services are listed or totalled. |
+
+#### Entity: OptionalService
+
+_An optional service offered by a particular hotel._
+
+| Attribute         | Suggested type | Key                 | Needed by         | Notes                                                                                |
+| ----------------- | -------------- | ------------------- | ----------------- | ------------------------------------------------------------------------------------ |
+| OptionalServiceID | INT            | PK                  | M3-Q2, Q3, Q4, Q5 | Identifies the service.                                                              |
+| HotelID           | INT            | FK -> Hotel.HotelID | M3-Q4, Q5         | Identifies the hotel offering the service.                                           |
+| ServiceName       | VARCHAR(100)   | -                   | M3-Q2, Q3, Q4     | For example, Breakfast Package or Airport Transfer.                                  |
+| ServiceType       | VARCHAR(50)    | -                   | M3-Q4, Q5         | Category used to group service revenue, such as Breakfast, Transfer, Parking or Spa. |
+| ChargingBasis     | VARCHAR(20)    | -                   | M3-Q2             | Per person, per room or per reservation.                                             |
+
+#### Entity: ReservationService
+
+_One optional-service purchase attached to a reservation._
+
+| Attribute            | Suggested type | Key                                     | Needed by             | Notes                                                                                                |
+| -------------------- | -------------- | --------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------- |
+| ReservationServiceID | INT            | PK                                      | M3-Q2, Q3, Q4, Q5, Q6 | Identifies one purchase record.                                                                      |
+| ReservationID        | INT            | FK -> Reservation.ReservationID         | M3-Q2, Q6             | Reservation that purchased the service.                                                              |
+| OptionalServiceID    | INT            | FK -> OptionalService.OptionalServiceID | M3-Q2, Q3, Q4, Q5     | Service purchased.                                                                                   |
+| Quantity             | INT            | -                                       | M3-Q2, Q4, Q5, Q6     | Number of chargeable units according to ChargingBasis.                                               |
+| UnitPriceAtPurchase  | DECIMAL(10,2)  | -                                       | M3-Q2, Q4, Q5, Q6     | Price charged per unit at purchase time, so later price changes do not alter past totals.            |
+| PurchasedDateTime    | DATETIME       | -                                       | M3-Q4, Q6             | Used for monthly sales and date-range queries.                                                       |
+| ServiceChargeAmount  | DECIMAL(12,2)  | D                                       | M3-Q2, Q4, Q5, Q6     | Calculated as Quantity × UnitPriceAtPurchase; whether to store it is decided during the group merge. |
 
 ### 3.3 Relationships
 
-| Entity A | Relationship (verb) | Entity B | Cardinality | Optionality | Needed by |
-| -------- | ------------------- | -------- | ----------- | ----------- | --------- |
-|          |                     |          |             |             |           |
+| Entity A        | Relationship (verb) | Entity B           | Cardinality | Optionality                                                                                      | Needed by         |
+| --------------- | ------------------- | ------------------ | ----------- | ------------------------------------------------------------------------------------------------ | ----------------- |
+| Hotel           | has rates for       | RoomRate           | 1:N         | Each rate belongs to one hotel; a hotel may have many rates.                                     | M3-Q1, Q7         |
+| RoomCategory    | has                 | RoomRate           | 1:N         | Each rate belongs to one category; a category may have many rates.                               | M3-Q1, Q7         |
+| Hotel           | offers              | OptionalService    | 1:N         | Each service belongs to one hotel; a hotel may offer zero or more services.                      | M3-Q4, Q5         |
+| Reservation     | includes            | ReservationService | 1:N         | A reservation may have zero or more service purchases; each purchase belongs to one reservation. | M3-Q2, Q6         |
+| OptionalService | appears in          | ReservationService | 1:N         | A service may never be purchased; each purchase refers to one service.                           | M3-Q2, Q3, Q4, Q5 |
 
 ### 3.4 Assumptions and open questions
 
-| #   | Type                  | Item | Raised for (Q or entity) | Resolution |
-| --- | --------------------- | ---- | ------------------------ | ---------- |
-| 3.1 | Assumption / Question |      |                          |            |
+| #   | Type       | Item                                                                                                                               | Raised for (Q or entity) | Resolution                                                                                                                                                     |
+| --- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1 | Assumption | The 10% promotion in Q1 is calculated from NightlyRate. It does not require a separate Promotion entity for this query.            | M3-Q1                    | Confirm during group merge.                                                                                                                                    |
+| 3.2 | Assumption | “Sold during a month” and the date range for top reservations refer to PurchasedDateTime.                                          | M3-Q4, Q6                | Confirm whether the group instead wants stay dates.                                                                                                            |
+| 3.3 | Assumption | Quantity means chargeable units: people, rooms or reservations, depending on ChargingBasis.                                        | M3-Q2                    | Confirm how multi-night services such as breakfast are counted. (Attribute use Quantity or headcount x DayAmount, e.g. 2 people x 3 days = 6 chargeable units) |
+| 3.4 | Question   | Member 5 uses a stored `ServiceChargeAmount`. This section calculates it from Quantity and UnitPriceAtPurchase.                    | ReservationService       | Agree on one approach during group merge.                                                                                                                      |
+| 3.5 | Question   | How will future RoomRate records be generated from weekday, weekend and holiday prices, and how far ahead will rates be available? | RoomRate, M3-Q1, M3-Q7   | Decide with the group during final design.                                                                                                                     |
 
 ### 3.5 Ideas parking lot (optional)
 
 Free-form. Anything that is not an entity or attribute: potential constraints, procedures, triggers, optimisation ideas, query tricks, denormalisation thoughts. Tag each so it can be picked up later.
 
-* `[constraint]`
-* `[procedure]`
-* `[trigger]`
-* `[optimisation]`
-* `[other]`
+* `[constraint]` Ensure only one RoomRate exists for the same HotelID, RoomCategoryID and RateDate.
+* `[procedure]` Consider a T-SQL stored procedure to generate future RoomRate records using agreed weekday, weekend and holiday prices.
+* `[trigger]` Consider preventing a reservation from purchasing an OptionalService offered by a different hotel.
+* `[other]` Agree with the group on how to handle cancelled or refunded service purchases in revenue reports. (Q4 & 5)
+* `[other]` The final booking design may need OptionalService.UnitPrice as the current listed price. When a service is purchased, its price could be copied to ReservationService.UnitPriceAtPurchase so later price changes do not alter old charges.
 
 <!-- SECTION 3 END -->
 
@@ -796,5 +853,5 @@ Free-form. Anything that is not an entity or attribute: potential constraints, p
 * \[procedure]: `sp_GetReservationBill(@ReservationID)`, returning the itemised bill and balance.
 * \[trigger]: Block a Payment that would overpay the balance, or a refund larger than the payments received.
 * \[optimisation]:
-* \[other]:
+* \[other]:Ensure only one RoomRate exists for the same HotelID, RoomCategoryID and RateDate.
 
